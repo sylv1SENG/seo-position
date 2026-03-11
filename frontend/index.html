@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Position Checker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-sidebar: #0f1117;
+  --bg-sidebar-hover: #1a1c25;
+  --bg-main: #f6f6f9;
+  --bg-card: #ffffff;
+  --text-primary: #0f1117;
+  --text-secondary: #6b6e7b;
+  --text-sidebar: #8b8d9a;
+  --text-sidebar-active: #ffffff;
+  --accent: #6c5ce7;
+  --accent-light: #a29bfe;
+  --accent-gradient: linear-gradient(135deg, #6c5ce7 0%, #a855f7 100%);
+  --success: #00c48c;
+  --success-bg: rgba(0,196,140,0.08);
+  --warning: #ff9f43;
+  --warning-bg: rgba(255,159,67,0.08);
+  --danger: #ff6b6b;
+  --danger-bg: rgba(255,107,107,0.08);
+  --border: #e8e8ee;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Outfit', -apple-system, sans-serif;
+}
+
+html { font-size: 15px; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-main);
+  color: var(--text-primary);
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Sidebar ─── */
+.sidebar {
+  width: 260px; min-width: 260px;
+  background: var(--bg-sidebar);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+
+.sidebar-brand {
+  padding: 28px 28px 36px;
+  display: flex; align-items: center; gap: 12px;
+}
+
+.sidebar-brand-icon {
+  width: 36px; height: 36px;
+  background: var(--accent-gradient);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; font-size: 16px;
+  box-shadow: 0 4px 14px rgba(108,92,231,0.35);
+}
+
+.sidebar-brand-icon svg { width: 18px; height: 18px; }
+
+.sidebar-brand-text {
+  font-family: var(--font-display);
+  font-size: 1.35rem; font-weight: 700; color: #fff;
+  letter-spacing: -0.02em;
+}
+.sidebar-brand-text span { color: var(--accent-light); }
+
+.sidebar-section-label {
+  font-size: 0.68rem; text-transform: uppercase;
+  letter-spacing: 0.1em; color: rgba(255,255,255,0.2);
+  padding: 0 28px; margin-bottom: 8px; margin-top: 8px; font-weight: 600;
+}
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; }
+
+.sidebar-link {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; border-radius: 10px;
+  color: var(--text-sidebar); text-decoration: none;
+  font-size: 0.9rem; font-weight: 450; cursor: pointer;
+  transition: all 0.2s ease; position: relative;
+}
+.sidebar-link:hover { background: var(--bg-sidebar-hover); color: #c8c9d2; }
+.sidebar-link.active { background: rgba(108,92,231,0.12); color: var(--text-sidebar-active); }
+.sidebar-link.active::before {
+  content: ''; position: absolute; left: 0; top: 50%;
+  transform: translateY(-50%); width: 3px; height: 20px;
+  background: var(--accent-gradient); border-radius: 0 3px 3px 0;
+}
+.sidebar-link svg { width: 18px; height: 18px; opacity: 0.6; flex-shrink: 0; }
+.sidebar-link.active svg { opacity: 1; }
+
+.sidebar-footer {
+  margin-top: auto; padding: 20px 16px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.sidebar-footer-info {
+  background: rgba(108,92,231,0.08);
+  border: 1px solid rgba(108,92,231,0.15);
+  border-radius: 12px; padding: 16px; text-align: center;
+}
+.sidebar-footer-info p { color: rgba(255,255,255,0.5); font-size: 0.75rem; line-height: 1.5; }
+.sidebar-footer-info .domain-display {
+  color: var(--accent-light); font-weight: 600;
+  font-size: 0.82rem; margin-top: 6px; word-break: break-all;
+}
+
+/* ─── Main ─── */
+.main { margin-left: 260px; flex: 1; min-height: 100vh; }
+
+.topbar {
+  padding: 20px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(246,246,249,0.85); backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 50;
+  border-bottom: 1px solid var(--border);
+}
+.topbar-title h1 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; letter-spacing: -0.02em; }
+.topbar-title p { color: var(--text-secondary); font-size: 0.82rem; margin-top: 2px; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+.btn {
+  font-family: var(--font-sans); font-size: 0.82rem; font-weight: 550;
+  padding: 9px 18px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-primary); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  transition: all 0.15s;
+}
+.btn:hover { border-color: #ccc; box-shadow: var(--shadow-sm); }
+.btn-primary { background: var(--accent-gradient); color: #fff; border: none; }
+.btn-primary:hover { box-shadow: 0 4px 14px rgba(108,92,231,0.35); transform: translateY(-1px); }
+.btn-success { background: var(--success); color: #fff; border: none; }
+.btn-success:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-danger { background: var(--danger); color: #fff; border: none; }
+.btn-danger:hover { opacity: 0.9; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+.btn svg { width: 15px; height: 15px; }
+.btn-lg { padding: 12px 28px; font-size: 0.92rem; border-radius: 10px; }
+
+.content { padding: 32px 40px 60px; }
+
+/* ─── Pages ─── */
+.page { display: none; animation: fadeUp 0.4s ease; }
+.page.active { display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── KPI Grid ─── */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 28px; }
+
+.kpi-card {
+  background: var(--bg-card); border-radius: var(--radius);
+  padding: 22px 24px; border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.kpi-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--accent-gradient); opacity: 0; transition: opacity 0.2s;
+}
+.kpi-card:hover::after { opacity: 1; }
+.kpi-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+.kpi-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.kpi-sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 8px; }
+.kpi-icon { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; }
+.kpi-icon svg { width: 20px; height: 20px; }
+.kpi-icon.purple { background: rgba(108,92,231,0.08); color: var(--accent); }
+.kpi-icon.green { background: var(--success-bg); color: var(--success); }
+.kpi-icon.orange { background: var(--warning-bg); color: var(--warning); }
+
+/* ─── Card ─── */
+.card {
+  background: var(--bg-card); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  overflow: hidden; margin-bottom: 28px;
+}
+.card-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+.card-header h3 { font-size: 0.95rem; font-weight: 600; }
+.card-header .badge { font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: rgba(108,92,231,0.08); color: var(--accent); }
+.card-body { padding: 20px 24px 24px; }
+.chart-container { position: relative; height: 320px; }
+
+/* ─── Table ─── */
+.table-header {
+  padding: 20px 24px; display: flex; align-items: center;
+  justify-content: space-between; border-bottom: 1px solid var(--border);
+}
+.table-header h3 { font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.table-header h3 .count { background: rgba(108,92,231,0.08); color: var(--accent); font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 6px; }
+
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.data-table thead th {
+  padding: 12px 24px; font-size: 0.72rem; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-secondary); font-weight: 600;
+  text-align: left; background: rgba(246,246,249,0.5);
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.data-table tbody tr { transition: background 0.15s; }
+.data-table tbody tr:hover { background: rgba(108,92,231,0.02); }
+.data-table tbody td {
+  padding: 14px 24px; font-size: 0.85rem;
+  border-bottom: 1px solid rgba(232,232,238,0.5); white-space: nowrap;
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* ─── Position Badges ─── */
+.pos-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 36px; padding: 4px 10px; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 700;
+}
+.pos-badge.top3 { background: var(--success-bg); color: var(--success); }
+.pos-badge.top10 { background: var(--warning-bg); color: var(--warning); }
+.pos-badge.top100 { background: var(--danger-bg); color: var(--danger); }
+.pos-badge.notfound { background: rgba(107,110,123,0.06); color: var(--text-secondary); }
+
+/* ─── Forms ─── */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; }
+.form-group .hint { font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; }
+
+.form-input {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-family: var(--font-sans); font-size: 0.88rem;
+  background: var(--bg-card); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,92,231,0.08); }
+
+textarea.form-input {
+  min-height: 180px; resize: vertical;
+  line-height: 1.7; font-size: 0.88rem;
+}
+
+.inline-form { display: flex; gap: 10px; align-items: flex-end; }
+.inline-form .form-input { flex: 1; }
+
+/* ─── Setup Layout ─── */
+.setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 900px;
+}
+
+.setup-grid .card { margin-bottom: 0; }
+
+.setup-actions {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 900px;
+}
+
+.setup-actions .time-estimate {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* ─── Keyword Tags ─── */
+.keyword-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+
+.keyword-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(108,92,231,0.04); border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 8px;
+  font-size: 0.8rem; font-weight: 500; transition: all 0.15s;
+}
+.keyword-tag:hover { border-color: var(--danger); }
+.keyword-tag .remove-kw {
+  cursor: pointer; color: var(--text-secondary);
+  font-size: 1.1rem; line-height: 1; transition: color 0.15s;
+}
+.keyword-tag .remove-kw:hover { color: var(--danger); }
+
+.keyword-count {
+  font-size: 0.78rem; color: var(--text-secondary); margin-top: 12px;
+}
+
+/* ─── Progress ─── */
+.progress-container { margin-top: 24px; }
+
+.progress-bar-track {
+  width: 100%; height: 8px; background: rgba(232,232,238,0.8);
+  border-radius: 4px; overflow: hidden; margin-bottom: 12px;
+}
+.progress-bar-fill {
+  height: 100%; background: var(--accent-gradient);
+  border-radius: 4px; transition: width 0.5s ease;
+}
+.progress-info { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-secondary); }
+.progress-keyword { font-weight: 600; color: var(--text-primary); margin-top: 8px; font-size: 0.9rem; }
+.countdown { font-family: 'DM Sans', monospace; font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-top: 12px; }
+
+/* ─── Empty State ─── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+.empty-state svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.3; }
+.empty-state p { font-size: 0.9rem; line-height: 1.6; }
+
+/* ─── Animations ─── */
+.kpi-card, .card { animation: cardIn 0.5s ease backwards; }
+.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(2) { animation-delay: 0.1s; }
+.kpi-card:nth-child(3) { animation-delay: 0.15s; }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2px solid rgba(108,92,231,0.2); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+  margin-right: 8px; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Toast ─── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 0.85rem; font-weight: 500; color: #fff;
+  background: var(--bg-sidebar); box-shadow: var(--shadow-lg);
+  z-index: 1000; animation: toastIn 0.3s ease; transition: opacity 0.3s;
+}
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--danger); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d1d8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #b0b0bb; }
+
+/* ─── Responsive ─── */
+@media (max-width: 1100px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .setup-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 24px 20px; }
+  .topbar { padding: 16px 20px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Sidebar ─── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <div class="sidebar-brand-text">SEO<span>Pos</span></div>
+  </div>
+
+  <div class="sidebar-section-label">Navigation</div>
+  <nav class="sidebar-nav">
+    <a class="sidebar-link active" data-page="analyse" onclick="showPage('analyse')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+      Nouvelle analyse
+    </a>
+    <a class="sidebar-link" data-page="results" onclick="showPage('results')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Résultats
+    </a>
+    <a class="sidebar-link" data-page="history" onclick="showPage('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Historique
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-info">
+      <p>Domaine cible</p>
+      <div class="domain-display" id="sidebarDomain">Non configuré</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ─── Main ─── -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">
+      <h1 id="page-title">Nouvelle analyse</h1>
+      <p id="page-subtitle">Configurez votre domaine et vos mots-clés</p>
+    </div>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ ANALYSE PAGE ═══ -->
+    <div class="page active" id="page-analyse">
+
+      <!-- Step 1: Config -->
+      <div class="setup-grid" id="setupConfig">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><h3>1. Site web à analyser</h3></div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Domaine cible</label>
+              <input type="text" class="form-input" id="domainInput" placeholder="example.com">
+              <div class="hint">Entrez le domaine sans https:// ni www. <br>Le domaine sera recherché dans les 100 premiers résultats Google.fr</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header">
+            <h3>2. Mots-clés à vérifier</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Liste de mots-clés (un par ligne)</label>
+              <textarea class="form-input" id="keywordsTextarea" placeholder="mot clé 1&#10;mot clé 2&#10;mot clé 3&#10;..."></textarea>
+              <div class="keyword-count" id="keywordCounter">0 mot-clé</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current keywords if any -->
+      <div class="card" id="currentKeywordsCard" style="display:none;max-width:900px;margin-top:20px">
+        <div class="card-header">
+          <h3>Mots-clés enregistrés <span class="badge" id="savedKwCount">0</span></h3>
+          <button class="btn btn-danger" onclick="clearAllKeywords()" style="font-size:0.78rem;padding:6px 12px">Tout supprimer</button>
+        </div>
+        <div class="card-body">
+          <div class="keyword-list" id="keywordList"></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="setup-actions">
+        <button class="btn btn-primary btn-lg" id="launchBtn" onclick="launchAnalysis()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Lancer l'analyse
+        </button>
+        <span class="time-estimate" id="timeEstimate"></span>
+      </div>
+
+      <!-- Progress (shown during scan) -->
+      <div class="card" id="scanProgress" style="display:none;max-width:900px;margin-top:24px">
+        <div class="card-header"><h3>Scan en cours</h3></div>
+        <div class="card-body">
+          <div class="progress-container">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+            </div>
+            <div class="progress-info">
+              <span id="progressLabel">0 / 0</span>
+              <span id="progressPct">0%</span>
+            </div>
+            <div class="progress-keyword" id="progressKeyword"></div>
+            <div class="countdown" id="countdown"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ RESULTS PAGE ═══ -->
+    <div class="page" id="page-results">
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card">
+          <div class="kpi-label">Mots-clés suivis</div>
+          <div class="kpi-value" id="kpiKeywords">0</div>
+          <div class="kpi-sub" id="kpiKeywordsSub">Aucun mot-clé</div>
+          <div class="kpi-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Dernière vérification</div>
+          <div class="kpi-value" id="kpiLastCheck" style="font-size:1.3rem">—</div>
+          <div class="kpi-sub" id="kpiLastCheckSub">&nbsp;</div>
+          <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Position moyenne</div>
+          <div class="kpi-value" id="kpiAvgPos">—</div>
+          <div class="kpi-sub" id="kpiAvgPosSub">&nbsp;</div>
+          <div class="kpi-icon orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <div class="card" id="resultsCard">
+        <div class="table-header">
+          <h3>Positions actuelles <span class="count" id="resultCount">0</span></h3>
+          <button class="btn btn-success" onclick="downloadExcel()" id="downloadBtn" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Télécharger Excel
+          </button>
+        </div>
+        <div id="resultsTableWrapper" style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mot-clé</th>
+                <th>Position</th>
+                <th>URL trouvée</th>
+                <th>Vérifié le</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="resultsEmpty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <p>Aucun résultat. Configurez vos mots-clés et lancez une analyse.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ HISTORY PAGE ═══ -->
+    <div class="page" id="page-history">
+      <div class="card">
+        <div class="card-header">
+          <h3>Historique des positions</h3>
+          <div>
+            <select id="historySelect" class="form-input" style="width:auto;padding:6px 12px;font-size:0.82rem" onchange="loadHistory()">
+              <option value="">Sélectionner un mot-clé</option>
+            </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="historyChart"></canvas>
+          </div>
+          <div id="historyEmpty" class="empty-state" style="padding:30px">
+            <p>Sélectionnez un mot-clé pour voir l'évolution de sa position.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── State ───
+let historyChart = null;
+let pollInterval = null;
+let countdownInterval = null;
+
+const API = '';
+
+// ─── Navigation ───
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  const link = document.querySelector(`.sidebar-link[data-page="${page}"]`);
+  if (link) link.classList.add('active');
+  const titles = {
+    analyse: ['Nouvelle analyse', 'Configurez votre domaine et vos mots-clés'],
+    results: ['Résultats', 'Positions actuelles sur Google.fr'],
+    history: ['Historique', 'Évolution des positions dans le temps']
+  };
+  const t = titles[page] || ['SEO Pos', ''];
+  document.getElementById('page-title').textContent = t[0];
+  document.getElementById('page-subtitle').textContent = t[1];
+
+  // Dynamic topbar actions
+  const topActions = document.getElementById('topbarActions');
+  if (page === 'results') {
+    topActions.innerHTML = `
+      <button class="btn btn-success" onclick="downloadExcel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Télécharger Excel
+      </button>`;
+  } else {
+    topActions.innerHTML = '';
+  }
+
+  if (page === 'results') loadResults();
+  if (page === 'history') loadKeywordsForSelect();
+  if (page === 'analyse') { loadAnalysePage(); checkStatus(); }
+}
+
+// ─── Toast ───
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ─── API Helpers ───
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  return res.json();
+}
+
+// ─── Analyse Page ───
+async function loadAnalysePage() {
+  // Load current domain
+  const data = await api('/api/settings');
+  document.getElementById('domainInput').value = data.target_domain || '';
+  updateSidebarDomain(data.target_domain);
+
+  // Load existing keywords
+  const keywords = await api('/api/keywords');
+  const card = document.getElementById('currentKeywordsCard');
+  if (keywords.length) {
+    card.style.display = 'block';
+    document.getElementById('savedKwCount').textContent = keywords.length;
+    document.getElementById('keywordList').innerHTML = keywords.map(kw => `
+      <div class="keyword-tag">
+        ${escapeHtml(kw.keyword)}
+        <span class="remove-kw" onclick="removeKeyword(${kw.id})" title="Supprimer">&times;</span>
+      </div>
+    `).join('');
+  } else {
+    card.style.display = 'none';
+  }
+
+  updateTimeEstimate();
+}
+
+function updateSidebarDomain(domain) {
+  document.getElementById('sidebarDomain').textContent = domain || 'Non configuré';
+}
+
+// Update keyword counter as user types
+document.getElementById('keywordsTextarea').addEventListener('input', function() {
+  updateTimeEstimate();
+});
+
+function getNewKeywords() {
+  const text = document.getElementById('keywordsTextarea').value.trim();
+  if (!text) return [];
+  return text.split('\n').map(k => k.trim()).filter(k => k.length > 0);
+}
+
+async function updateTimeEstimate() {
+  const newKws = getNewKeywords();
+  const existing = await api('/api/keywords');
+  const total = newKws.length + existing.length;
+
+  const counter = document.getElementById('keywordCounter');
+  counter.textContent = newKws.length ? `${newKws.length} nouveau${newKws.length > 1 ? 'x' : ''} mot${newKws.length > 1 ? 's' : ''}-clé${newKws.length > 1 ? 's' : ''}` : '0 mot-clé';
+
+  const est = document.getElementById('timeEstimate');
+  if (total > 0) {
+    const seconds = total * 5; // ~5s per keyword via SerpAPI
+    const timeStr = seconds >= 60 ? `~${Math.ceil(seconds / 60)}min` : `~${seconds}s`;
+    est.textContent = `${total} mot${total > 1 ? 's' : ''}-clé${total > 1 ? 's' : ''} au total — Durée estimée : ${timeStr}`;
+  } else {
+    est.textContent = '';
+  }
+}
+
+async function launchAnalysis() {
+  const domain = document.getElementById('domainInput').value.trim();
+  if (!domain) return toast('Entrez un domaine cible', 'error');
+
+  // Save domain
+  await api('/api/settings', { method: 'POST', body: JSON.stringify({ target_domain: domain }) });
+  updateSidebarDomain(domain);
+
+  // Add new keywords (bulk)
+  const newKws = getNewKeywords();
+  if (newKws.length) {
+    const result = await api('/api/keywords', {
+      method: 'POST',
+      body: JSON.stringify({ keywords: newKws })
+    });
+    if (result.count > 0) {
+      toast(`${result.count} mot${result.count > 1 ? 's' : ''}-clé${result.count > 1 ? 's' : ''} ajouté${result.count > 1 ? 's' : ''}`);
+    }
+    if (result.skipped && result.skipped.length > 0) {
+      toast(`${result.skipped.length} doublon${result.skipped.length > 1 ? 's' : ''} ignoré${result.skipped.length > 1 ? 's' : ''}`, 'error');
+    }
+    document.getElementById('keywordsTextarea').value = '';
+  }
+
+  // Check we have keywords
+  const keywords = await api('/api/keywords');
+  if (!keywords.length) return toast('Ajoutez au moins un mot-clé', 'error');
+
+  // Start scan
+  const data = await api('/api/check', { method: 'POST' });
+  if (data.error) return toast(data.error, 'error');
+
+  toast('Analyse démarrée');
+  loadAnalysePage();
+  startPolling();
+}
+
+async function clearAllKeywords() {
+  await api('/api/keywords/clear', { method: 'POST' });
+  toast('Tous les mots-clés supprimés');
+  loadAnalysePage();
+}
+
+async function removeKeyword(id) {
+  await api(`/api/keywords/${id}`, { method: 'DELETE' });
+  loadAnalysePage();
+}
+
+// ─── Results ───
+async function loadResults() {
+  const results = await api('/api/results');
+  const body = document.getElementById('resultsBody');
+  const empty = document.getElementById('resultsEmpty');
+  const wrapper = document.getElementById('resultsTableWrapper');
+  const countEl = document.getElementById('resultCount');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  if (!results.length || !results.some(r => r.checked_at)) {
+    empty.style.display = 'block';
+    wrapper.style.display = 'none';
+    if (downloadBtn) downloadBtn.style.display = 'none';
+    countEl.textContent = '0';
+    updateKPIs(results);
+    return;
+  }
+
+  empty.style.display = 'none';
+  wrapper.style.display = 'block';
+  if (downloadBtn) downloadBtn.style.display = 'inline-flex';
+  countEl.textContent = results.length;
+
+  body.innerHTML = results.map(r => {
+    const badge = positionBadge(r.position);
+    const url = r.url_found
+      ? `<a href="${escapeHtml(r.url_found)}" target="_blank" style="color:var(--accent);text-decoration:none;font-size:0.8rem">${truncate(r.url_found, 55)}</a>`
+      : '<span style="color:var(--text-secondary)">—</span>';
+    const date = r.checked_at ? formatDate(r.checked_at) : '<span style="color:var(--text-secondary)">Pas encore vérifié</span>';
+    return `<tr>
+      <td style="font-weight:600">${escapeHtml(r.keyword)}</td>
+      <td>${badge}</td>
+      <td>${url}</td>
+      <td>${date}</td>
+    </tr>`;
+  }).join('');
+
+  updateKPIs(results);
+}
+
+function positionBadge(pos) {
+  if (pos === null || pos === undefined) return '<span class="pos-badge notfound">N/A</span>';
+  if (pos <= 3) return `<span class="pos-badge top3">#${pos}</span>`;
+  if (pos <= 10) return `<span class="pos-badge top10">#${pos}</span>`;
+  return `<span class="pos-badge top100">#${pos}</span>`;
+}
+
+function updateKPIs(results) {
+  const total = results.length;
+  document.getElementById('kpiKeywords').textContent = total;
+  document.getElementById('kpiKeywordsSub').textContent = total === 0 ? 'Aucun mot-clé' : `${total} mot${total > 1 ? 's' : ''}-clé${total > 1 ? 's' : ''}`;
+
+  const withPos = results.filter(r => r.position !== null && r.position !== undefined);
+  const checked = results.filter(r => r.checked_at);
+
+  if (checked.length) {
+    const dates = checked.map(r => new Date(r.checked_at));
+    const latest = new Date(Math.max(...dates));
+    document.getElementById('kpiLastCheck').textContent = latest.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    document.getElementById('kpiLastCheckSub').textContent = latest.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  if (withPos.length) {
+    const avg = withPos.reduce((a, r) => a + r.position, 0) / withPos.length;
+    document.getElementById('kpiAvgPos').textContent = avg.toFixed(1);
+    const top10 = withPos.filter(r => r.position <= 10).length;
+    document.getElementById('kpiAvgPosSub').textContent = `${top10} en top 10, ${withPos.length} trouvés`;
+  }
+}
+
+// ─── Download Excel ───
+function downloadExcel() {
+  window.location.href = API + '/api/export';
+}
+
+// ─── History Chart ───
+async function loadKeywordsForSelect() {
+  const keywords = await api('/api/keywords');
+  const select = document.getElementById('historySelect');
+  const current = select.value;
+  select.innerHTML = '<option value="">Sélectionner un mot-clé</option>';
+  keywords.forEach(kw => {
+    select.innerHTML += `<option value="${kw.id}">${escapeHtml(kw.keyword)}</option>`;
+  });
+  if (current) select.value = current;
+}
+
+async function loadHistory() {
+  const kwId = document.getElementById('historySelect').value;
+  const emptyEl = document.getElementById('historyEmpty');
+  if (!kwId) { emptyEl.style.display = 'block'; return; }
+
+  const history = await api(`/api/history/${kwId}`);
+  if (!history.length) { emptyEl.style.display = 'block'; return; }
+  emptyEl.style.display = 'none';
+
+  const labels = history.map(h => formatDate(h.checked_at));
+  const data = history.map(h => h.position);
+
+  const ctx = document.getElementById('historyChart').getContext('2d');
+  if (historyChart) historyChart.destroy();
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+  gradient.addColorStop(0, 'rgba(108,92,231,0.15)');
+  gradient.addColorStop(1, 'rgba(108,92,231,0)');
+
+  historyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Position',
+        data,
+        borderColor: '#6c5ce7',
+        backgroundColor: gradient,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#6c5ce7',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: data.length > 30 ? 0 : 5,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f1117',
+          titleFont: { family: 'DM Sans', size: 13 },
+          bodyFont: { family: 'DM Sans', size: 12 },
+          padding: 12, cornerRadius: 8, displayColors: false,
+          callbacks: { label: ctx => `Position: #${ctx.parsed.y}` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: 'DM Sans', size: 11 }, color: '#6b6e7b', maxTicksLimit: 12 }
+        },
+        y: {
+          reverse: true, min: 1,
+          grid: { color: 'rgba(232,232,238,0.5)' },
+          ticks: { font: { family: 'DM Sans', size: 11 }, color: '#6b6e7b', stepSize: 1, callback: v => '#' + v }
+        }
+      }
+    }
+  });
+}
+
+// ─── Scan Status Polling ───
+function startPolling() {
+  checkStatus();
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(checkStatus, 3000);
+}
+
+async function checkStatus() {
+  const status = await api('/api/status');
+  const container = document.getElementById('scanProgress');
+  const btn = document.getElementById('launchBtn');
+
+  if (status.running) {
+    container.style.display = 'block';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Analyse en cours…';
+
+    const pct = status.total ? Math.round(((status.current_index) / status.total) * 100) : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = `${status.current_index + 1} / ${status.total}`;
+    document.getElementById('progressPct').textContent = pct + '%';
+    document.getElementById('progressKeyword').textContent = status.current_keyword
+      ? `Vérification de « ${status.current_keyword} »…`
+      : '';
+
+    if (status.next_check_at) {
+      startCountdown(new Date(status.next_check_at));
+    } else {
+      document.getElementById('countdown').textContent = '';
+      if (countdownInterval) clearInterval(countdownInterval);
+    }
+
+    if (!pollInterval) pollInterval = setInterval(checkStatus, 3000);
+  } else {
+    container.style.display = 'none';
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg> Lancer l'analyse`;
+    document.getElementById('countdown').textContent = '';
+    if (countdownInterval) clearInterval(countdownInterval);
+    if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  }
+}
+
+function startCountdown(targetDate) {
+  if (countdownInterval) clearInterval(countdownInterval);
+  const el = document.getElementById('countdown');
+  function update() {
+    const remaining = Math.max(0, Math.floor((targetDate - Date.now()) / 1000));
+    if (remaining <= 0) { el.textContent = 'Vérification en cours…'; clearInterval(countdownInterval); return; }
+    const min = Math.floor(remaining / 60);
+    const sec = remaining % 60;
+    el.textContent = `Prochain mot-clé dans ${min}:${sec.toString().padStart(2, '0')}`;
+  }
+  update();
+  countdownInterval = setInterval(update, 1000);
+}
+
+// ─── Helpers ───
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function truncate(str, len) {
+  if (!str) return '';
+  return str.length > len ? str.substring(0, len) + '…' : str;
+}
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ─── Init ───
+async function init() {
+  const settings = await api('/api/settings');
+  updateSidebarDomain(settings.target_domain);
+  loadAnalysePage();
+  checkStatus();
+}
+init();
+</script>
+</body>
+</html>

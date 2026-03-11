@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+data/positions.db
+data/positions.db-wal
+data/positions.db-shm
+.DS_Store
+.env
